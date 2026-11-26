@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CafePOS</title>
+<style>
+:root{--bg:#f2f4f0;--s:#fff;--t:#17201b;--m:#66726b;--l:#dde3dc;--a:#2f5d50;--at:#fff;--ok:#176b3a;--okb:#d9f2e1;--wb:#fbeccb;--wt:#7a5410;--d:#a4262c;--db:#fbdcdc;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#101512;--s:#1a211d;--t:#eef2ee;--m:#9aa8a0;--l:#2a342f;--a:#6fc3a6;--at:#0b1410;--ok:#7fdca0;--okb:#173a25;--wb:#3b2f10;--wt:#f0cd7c;--d:#f09a9e;--db:#3d1b1d;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t);font:15px/1.45 "Avenir Next","Segoe UI",system-ui,sans-serif;padding-bottom:env(safe-area-inset-bottom,0px)}
+button,input,select{font:inherit;color:inherit}
+header{position:sticky;top:0;z-index:9;background:var(--s);border-bottom:1px solid var(--l);padding:10px 14px;padding-top:max(10px,env(safe-area-inset-top,0px))}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:10px;max-width:760px;margin:0 auto}
+.logo{font-weight:800;font-size:18px;letter-spacing:-.02em}
+.seg{display:flex;background:var(--bg);border-radius:999px;padding:3px}
+.seg a{padding:6px 14px;border-radius:999px;color:var(--m);font-weight:600;text-decoration:none}
+.seg a.on{background:var(--a);color:var(--at)}
+main{max-width:760px;margin:0 auto;padding:14px 14px 90px}
+.chips,.tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:8px}
+.chip{border:1px solid var(--l);background:var(--s);border-radius:999px;padding:6px 14px;cursor:pointer;white-space:nowrap;flex:none}
+.chip[aria-pressed=true]{background:var(--t);color:var(--bg);border-color:var(--t)}
+.card{background:var(--s);border:1px solid var(--l);border-radius:14px;padding:12px;margin-bottom:10px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.item{display:flex;gap:12px;align-items:center}
+.em{width:54px;height:54px;border-radius:12px;background:var(--bg);display:grid;place-items:center;font-size:26px;flex:none;object-fit:cover}
+.p{font-weight:700;color:var(--a)}.mut{color:var(--m);font-size:13px}
+.btn{border:0;background:var(--a);color:var(--at);border-radius:10px;padding:9px 16px;font-weight:700;cursor:pointer}
+.btn.o{background:none;border:1.5px solid var(--a);color:var(--a)}.btn.g{background:var(--db);color:var(--d)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.qty{display:flex;align-items:center;gap:10px}
+.qty button{width:30px;height:30px;border-radius:50%;border:1px solid var(--l);background:var(--s);cursor:pointer;font-size:17px}
+.fab{position:fixed;left:14px;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));max-width:732px;margin:0 auto;display:flex;justify-content:space-between;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+label{display:block;font-weight:600;font-size:13px;margin:10px 0 4px}
+.in{width:100%;padding:10px;border:1px solid var(--l);border-radius:10px;background:var(--bg)}
+.pay{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pay button{padding:10px;border-radius:10px;border:1.5px solid var(--l);background:var(--s);cursor:pointer;font-weight:600}
+.pay button[aria-pressed=true]{border-color:var(--a);background:var(--bg);color:var(--a)}
+.err{background:var(--db);color:var(--d);border-radius:10px;padding:8px 12px;margin:10px 0;font-size:14px}
+.tag{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:700}
+.t-ok{background:var(--okb);color:var(--ok)}.t-w{background:var(--wb);color:var(--wt)}.t-d{background:var(--db);color:var(--d)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:12px 0}
+.steps div{text-align:center;padding:8px 4px;border-radius:10px;background:var(--bg);color:var(--m);font-size:13px;font-weight:600}
+.steps .on{background:var(--a);color:var(--at)}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat b{display:block;font-size:22px}.stat span{color:var(--m);font-size:13px}
+h2{font-size:16px;margin:14px 0 8px}
+.empty{text-align:center;color:var(--m);padding:28px 0}
+table{width:100%;border-collapse:collapse;font-size:14px}td{padding:8px 4px;border-top:1px solid var(--l)}
+a.link{color:var(--m);font-size:13px}
+:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+</style>
+</head>
+<body>
+<header id="hd"></header>
+<main id="app"></main>
+<script>
+/* ====== SATU-SATUNYA YANG PERLU DIUBAH: tempel URL Web App Apps Script (berakhiran /exec) ====== */
+const GAS_URL = 'GANTI_DENGAN_URL_WEB_APP_ANDA';
+/* ================================================================================================ */
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const rp = n => 'Rp' + Number(n || 0).toLocaleString('id-ID');
+const store = { get(k) { try { return JSON.parse(localStorage.getItem(k)) } catch (e) { return null } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} }, del(k) { try { localStorage.removeItem(k) } catch (e) {} } };
+const wib = (back = 0) => { const d = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' })); d.setDate(d.getDate() - back); const p = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) };
+const uid = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'k-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+
+async function api(action, payload = {}, auth = false) {
+  if (GAS_URL.indexOf('GANTI') >= 0) throw new Error('URL Apps Script belum diisi di file index.html (baris GAS_URL).');
+  const ses = store.get('cp_ses');
+  let r;
+  try { r = await fetch(GAS_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action, payload, token: auth && ses ? ses.token : undefined }) }); }
+  catch (e) { throw new Error('Tidak dapat terhubung. Periksa koneksi internet Anda.'); }
+  let j;
+  try { j = await r.json(); } catch (e) { throw new Error('Respons server tidak valid. Periksa URL dan akses deployment (harus Anyone).'); }
+  if (!j.ok) {
+    if (j.error && j.error.code === 'UNAUTHENTICATED') { store.del('cp_ses'); location.hash = '#/login'; }
+    const er = new Error(j.error ? j.error.message : 'Terjadi kesalahan'); er.code = j.error && j.error.code; throw er;
+  }
+  return j.data;
+}
+
+/* ---------- state ---------- */
+let D = {}, T, C = store.get('cp_cart') || {}, U = store.get('cp_cust') || { name: '', phone: '', table: '', method: 'CASH' };
+var idem = uid(), E = '', posTab = 'NEW', posDays = 1, admDays = 7, admPage = 1;
+const save = () => { store.set('cp_cart', C); store.set('cp_cust', U); };
+const cnt = () => Object.values(C).reduce((s, i) => s + i.q, 0);
+const tot = () => Object.values(C).reduce((s, i) => s + i.q * i.p, 0);
+const set = (k, v) => { window[k] = v; };
+
+function head(staff) {
+  const s = store.get('cp_ses'), h = location.hash;
+  $('#hd').innerHTML = staff && s
+    ? `<div class="bar"><span class="logo">☕ CafePOS</span><nav class="seg"><a href="#/pos" class="${h === '#/pos' ? 'on' : ''}">Kasir</a>${s.user.permissions.includes('*') ? `<a href="#/admin" class="${h === '#/admin' ? 'on' : ''}">Admin</a>` : ''}</nav><a class="link" href="#" onclick="logout();return false">Keluar</a></div>`
+    : `<div class="bar"><span class="logo">☕ ${esc((D.cfg && D.cfg.cafe_name) || 'CafePOS')}</span><a class="link" href="#/login">Staf</a></div>`;
+}
+const view = (html) => { $('#app').innerHTML = html; };
+const fail = e => view(`<div class="err" role="alert">${esc(e.message)}</div><button class="btn" onclick="route()">Coba lagi</button>`);
+async function logout() { try { const s = store.get('cp_ses'); await api('logout', { token: s && s.token }, true); } catch (e) {} store.del('cp_ses'); location.hash = '#/login'; }
+
+/* ---------- router ---------- */
+async function route() {
+  clearTimeout(T);
+  const parts = (location.hash.slice(1) || '/menu').split('/'), a = parts[1], b = parts[2];
+  try {
+    if (a === 'login') return vLogin();
+    if (a === 'pos' || a === 'admin') {
+      const s = store.get('cp_ses');
+      if (!s) { location.hash = '#/login'; return; }
+      if (a === 'admin' && !s.user.permissions.includes('*')) { location.hash = '#/pos'; return; }
+      return a === 'pos' ? vPos() : vAdmin();
+    }
+    if (!D.menu) { head(); view('<p class="empty">Memuat menu…</p>'); const r = await Promise.all([api('getPublicMenu'), api('getPublicConfig')]); D.menu = r[0]; D.cfg = r[1]; }
+    head();
+    if (a === 'cart') return vCart();
+    if (a === 'order') return vOrder(b);
+    vMenu();
+  } catch (e) { head(); fail(e); }
+}
+window.addEventListener('hashchange', () => { window.scrollTo(0, 0); route(); });
+
+/* ---------- pelanggan ---------- */
+var cat = 'ALL';
+function addC(id, d) { const p = D.menu.products.find(x => x.product_id === id); if (!p) return; const c = C[id] || (C[id] = { n: p.name, p: p.price, q: 0 }); c.q += d; if (c.q <= 0) delete C[id]; save(); route(); }
+function vMenu() {
+  const t = new URLSearchParams(location.search).get('meja'); if (t && /^[\w-]{1,10}$/.test(t)) { U.table = t; save(); }
+  const list = D.menu.products.filter(p => cat === 'ALL' || p.category_id === cat), n = cnt();
+  view(`<div class="chips">${[{ category_id: 'ALL', name: 'Semua' }].concat(D.menu.categories).map(c => `<button class="chip" aria-pressed="${cat === c.category_id}" onclick="set('cat','${esc(c.category_id)}');route()">${esc(c.name)}</button>`).join('')}</div>
+  ${list.length ? list.map(p => { const q = C[p.product_id] ? C[p.product_id].q : 0, id = esc(p.product_id);
+    return `<div class="card item">${/^https:/.test(p.image_url) ? `<img class="em" src="${esc(p.image_url)}" alt="" loading="lazy">` : '<div class="em">☕</div>'}<div style="flex:1;min-width:0"><div style="font-weight:700">${esc(p.name)}</div>${p.description ? `<div class="mut">${esc(p.description)}</div>` : ''}<div class="p">${rp(p.price)}</div></div>
+    ${q ? `<div class="qty"><button aria-label="Kurangi" onclick="addC('${id}',-1)">−</button><b>${q}</b><button aria-label="Tambah" onclick="addC('${id}',1)">+</button></div>` : `<button class="btn o" onclick="addC('${id}',1)">Tambah</button>`}</div>`; }).join('') : '<p class="empty">Menu belum tersedia.</p>'}
+  ${n ? `<a class="btn fab" href="#/cart" style="text-decoration:none"><span>${n} item</span><span>Lihat keranjang · ${rp(tot())}</span></a>` : ''}`);
+}
+function vCart() {
+  const cfg = D.cfg, ids = Object.keys(C);
+  if (!ids.length) return view('<div class="empty">Keranjang masih kosong.<br><br><a class="btn" href="#/menu" style="text-decoration:none">Pilih menu</a></div>');
+  view(`<a class="link" href="#/menu">← Menu</a><h2>Keranjang</h2>
+  ${ids.map(id => `<div class="card row"><div><b>${esc(C[id].n)}</b><div class="mut">${rp(C[id].p)}</div></div><div class="qty"><button aria-label="Kurangi" onclick="addC('${esc(id)}',-1)">−</button><b>${C[id].q}</b><button aria-label="Tambah" onclick="addC('${esc(id)}',1)">+</button></div></div>`).join('')}
+  <div class="card"><label for="n">Nama</label><input id="n" class="in" maxlength="80" value="${esc(U.name)}" oninput="U.name=this.value;save()">
+  <label for="h">Nomor telepon</label><input id="h" class="in" inputmode="tel" placeholder="08xxxxxxxxxx" value="${esc(U.phone)}" oninput="U.phone=this.value;save()">
+  ${cfg.table_enabled ? `<label for="m">Nomor meja</label><select id="m" class="in" onchange="U.table=this.value;save()"><option value="">${cfg.table_required ? 'Pilih meja…' : 'Tanpa meja (bawa pulang)'}</option>${cfg.tables.map(t => `<option value="${esc(t)}" ${String(U.table) === String(t) ? 'selected' : ''}>Meja ${esc(t)}</option>`).join('')}</select>` : ''}
+  <label>Metode pembayaran</label><div class="pay">${[['CASH', 'Tunai', cfg.allow_cash], ['QRIS', 'QRIS', cfg.allow_qris]].map(m => `<button ${m[2] ? '' : 'disabled'} aria-pressed="${U.method === m[0]}" onclick="U.method='${m[0]}';save();vCart()">${m[1]}</button>`).join('')}</div>
+  ${E ? `<div class="err" role="alert">${esc(E)}</div>` : ''}</div>
+  <div class="row" style="font-weight:800;font-size:17px;margin:8px 2px"><span>Total</span><span>${rp(tot())}</span></div>
+  <button id="ob" class="btn" style="width:100%;padding:13px" onclick="order()">Pesan sekarang</button>
+  <p class="mut" style="text-align:center">Harga final dihitung ulang oleh server.</p>`);
+}
+async function order() {
+  const ph = U.phone.replace(/[\s-]/g, ''), cfg = D.cfg; E = '';
+  if (!U.name.trim()) E = 'Nama wajib diisi.';
+  else if (!/^(\+62|62|0)8\d{7,12}$/.test(ph)) E = 'Nomor telepon tidak valid. Contoh: 081234567890';
+  else if (cfg.table_enabled && cfg.table_required && !U.table) E = 'Pilih nomor meja.';
+  if (E) return vCart();
+  const b = $('#ob'); b.disabled = true; b.textContent = 'Memproses…';
+  try {
+    const o = await api('createOrder', { customer_name: U.name.trim(), customer_phone: ph, table_number: cfg.table_enabled ? U.table : '', payment_method: U.method, idempotency_key: idem, items: Object.keys(C).map(id => ({ product_id: id, qty: C[id].q })) });
+    await api('createPayment', { order_id: o.order_id, customer_phone: ph });
+    store.set('cp_o_' + o.order_id, ph); C = {}; idem = uid(); save(); location.hash = '#/order/' + o.order_id;
+  } catch (e) { E = e.message; vCart(); }
+}
+const STL = { NEW: 'Pesanan diterima', PROCESSING: 'Sedang diproses', DONE: 'Pesanan selesai', CANCELLED: 'Pesanan dibatalkan' };
+async function vOrder(id) {
+  const ph = store.get('cp_o_' + id);
+  if (!ph) return view(`<h2>Lacak pesanan ${esc(id)}</h2><label for="t">Nomor telepon saat memesan</label><input id="t" class="in" inputmode="tel"><button class="btn" style="margin-top:10px" onclick="store.set('cp_o_${esc(id)}',$('#t').value.replace(/[\\s-]/g,''));route()">Lihat status</button>${E ? `<div class="err">${esc(E)}</div>` : ''}`);
+  let d;
+  try { d = await api('getOrderStatus', { order_id: id, customer_phone: ph }); }
+  catch (e) { if (e.code === 'NOT_FOUND') { store.del('cp_o_' + id); E = 'Pesanan tidak ditemukan. Periksa nomor telepon.'; return vOrder(id); } throw e; }
+  E = '';
+  const at = ['NEW', 'PROCESSING', 'DONE'].indexOf(d.status), unpaid = d.payment_status === 'UNPAID' && d.status !== 'CANCELLED', q = D.cfg.qris_image_url;
+  view(`<a class="link" href="#/menu">← Pesan lagi</a><h2>Pesanan ${esc(d.order_id)}</h2>
+  <div class="card"><div style="font-weight:800;font-size:17px">${STL[d.status] || esc(d.status)}</div>
+  ${d.status !== 'CANCELLED' ? `<div class="steps">${['Diterima', 'Diproses', 'Selesai'].map((l, i) => `<div class="${i <= at ? 'on' : ''}">${l}</div>`).join('')}</div>` : ''}
+  <div class="row"><span class="mut">Pembayaran (${d.payment_method === 'CASH' ? 'Tunai' : 'QRIS'})</span><span class="tag ${d.payment_status === 'PAID' ? 't-ok' : 't-d'}">${d.payment_status === 'PAID' ? 'Lunas' : 'Belum bayar'}</span></div>
+  ${unpaid && d.payment_method === 'CASH' ? `<p>Silakan bayar tunai <b>${rp(d.total)}</b> di kasir.</p>` : ''}
+  ${unpaid && d.payment_method === 'QRIS' ? `<div style="text-align:center">${/^https:/.test(q) ? `<img src="${esc(q)}" alt="QRIS" style="max-width:260px;width:100%;margin:8px auto;display:block;border-radius:10px">` : '<p class="mut">QRIS belum tersedia, hubungi kasir.</p>'}<p>Bayar tepat <b>${rp(d.total)}</b>. Status berubah menjadi Lunas setelah kasir mengonfirmasi.</p></div>` : ''}</div>
+  <div class="card">${(d.items || []).map(i => `<div class="row"><span>${i.qty}× ${esc(i.name)}</span><span>${rp(i.subtotal)}</span></div>`).join('')}<div class="row" style="font-weight:800;border-top:1px solid var(--l);margin-top:8px;padding-top:8px"><span>Total</span><span>${rp(d.total)}</span></div></div>
+  ${d.notifications && d.notifications.length ? `<h2>Riwayat</h2><div class="mut">${d.notifications.slice().reverse().map(n => `${esc(String(n.created_at).slice(11, 16))} · ${esc(n.message)}`).join('<br>')}</div>` : ''}`);
+  if (d.status !== 'DONE' && d.status !== 'CANCELLED') T = setTimeout(route, 5000);
+}
+
+/* ---------- login ---------- */
+function vLogin() {
+  head(); view(`<div style="max-width:360px;margin:30px auto"><h2 style="font-size:22px">Masuk staf</h2><p class="mut">Untuk kasir dan admin.</p><div class="card"><label for="u">Username</label><input id="u" class="in" autocomplete="username"><label for="p">Password</label><input id="p" type="password" class="in" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"><div id="le"></div><button id="lb" class="btn" style="width:100%;margin-top:12px" onclick="doLogin()">Masuk</button></div></div>`);
+}
+async function doLogin() {
+  const b = $('#lb'); b.disabled = true;
+  try { const r = await api('login', { username: $('#u').value.trim(), password: $('#p').value }); store.set('cp_ses', r); location.hash = r.user.permissions.includes('*') ? '#/admin' : '#/pos'; }
+  catch (e) { $('#le').innerHTML = `<div class="err" role="alert">${esc(e.message)}</div>`; b.disabled = false; }
+}
+
+/* ---------- kasir ---------- */
+const TABS = [['NEW', 'Order masuk'], ['PROCESSING', 'Proses'], ['UNPAID', 'Belum bayar'], ['PAID', 'Lunas'], ['DONE', 'Selesai'], ['CANCELLED', 'Batal']];
+async function vPos() {
+  head(true);
+  const r = { from: wib(posDays - 1), to: wib(0) };
+  const [p, c] = await Promise.all([api('getOrders', Object.assign({ tab: posTab, pageSize: 50 }, r), true), api('getOrderCounts', r, true)]);
+  view(`<div class="row"><h2 style="margin:0">Order</h2><select class="in" style="width:auto" aria-label="Rentang" onchange="set('posDays',+this.value);route()"><option value="1" ${posDays === 1 ? 'selected' : ''}>Hari ini</option><option value="7" ${posDays === 7 ? 'selected' : ''}>7 hari terakhir</option></select></div>
+  <div class="tabs" style="margin-top:10px">${TABS.map(t => `<button class="chip" aria-pressed="${posTab === t[0]}" onclick="set('posTab','${t[0]}');route()">${t[1]} <small>${c[t[0]] || 0}</small></button>`).join('')}</div>
+  ${p.items.length ? p.items.map(o => { const paid = o.payment_status === 'PAID', open = o.status === 'NEW' || o.status === 'PROCESSING', id = esc(o.order_id);
+    return `<div class="card"><div class="row"><b>${id} · ${esc(o.customer_name)}</b><span class="mut">${o.table_number ? 'Meja ' + esc(o.table_number) : 'Bawa pulang'}</span></div>
+    <div class="mut" style="margin:4px 0 8px">${o.items.map(i => i.qty + '× ' + esc(i.name)).join(', ')}</div>${o.note ? `<div class="mut" style="color:var(--wt)">Catatan: ${esc(o.note)}</div>` : ''}
+    <div class="row"><b>${rp(o.total)}</b><span><span class="tag t-w">${o.payment_method === 'CASH' ? 'Tunai' : 'QRIS'}</span> <span class="tag ${paid ? 't-ok' : 't-d'}">${paid ? 'Lunas' : 'Belum bayar'}</span></span></div>
+    ${open ? `<div class="row" style="margin-top:10px;justify-content:flex-start;flex-wrap:wrap">${o.status === 'NEW' ? `<button class="btn" onclick="act('${id}','updateOrderStatus',{status:'PROCESSING'})">Proses</button>` : `<button class="btn" ${paid ? '' : 'disabled title="Konfirmasi pembayaran dulu"'} onclick="act('${id}','updateOrderStatus',{status:'DONE'})">Selesai</button>`}
+    ${paid ? '' : `<button class="btn o" onclick="act('${id}','confirmPayment')">Konfirmasi bayar</button>`}<button class="btn g" onclick="confirm('Batalkan order ${id}?')&&act('${id}','updateOrderStatus',{status:'CANCELLED'})">Batal</button></div>` : ''}</div>`; }).join('') : '<p class="empty">Belum ada order di tab ini.</p>'}`);
+  T = setTimeout(route, 10000);
+}
+async function act(id, action, extra) {
+  try { await api(action, Object.assign({ order_id: id }, extra || {}), true); } catch (e) { alert(e.message); }
+  route();
+}
+
+/* ---------- admin ---------- */
+function chart(v, lb) {
+  const W = 320, H = 110, pd = 18, mx = Math.max.apply(null, v.concat([1])) * 1.1, pts = v.map((x, i) => [pd + i * (W - 2 * pd) / Math.max(v.length - 1, 1), H - pd - (x / mx) * (H - 2 * pd)]);
+  let d = 'M' + pts[0].join(','); for (let i = 1; i < pts.length; i++) { const a = pts[i - 1], b = pts[i], cx = (a[0] + b[0]) / 2; d += ` C${cx},${a[1]} ${cx},${b[1]} ${b[0]},${b[1]}`; }
+  const ev = Math.ceil(lb.length / 8), last = pts[pts.length - 1];
+  return `<svg viewBox="0 0 ${W} ${H + 14}" width="100%" role="img" aria-label="Grafik"><path d="${d} L${last[0]},${H - pd} L${pts[0][0]},${H - pd} Z" style="fill:var(--a);opacity:.13"/><path d="${d}" fill="none" stroke-width="2.5" stroke-linecap="round" style="stroke:var(--a)"/>${pts.map(p => `<circle cx="${p[0]}" cy="${p[1]}" r="3" style="fill:var(--a)"/>`).join('')}${lb.map((l, i) => i % ev ? '' : `<text x="${pts[i][0]}" y="${H + 8}" font-size="9" text-anchor="middle" style="fill:var(--m)">${l}</text>`).join('')}</svg>`;
+}
+async function vAdmin() {
+  head(true);
+  const d = await api('getDashboardStatistics', { from: wib(admDays - 1), to: wib(0), page: admPage, pageSize: 10 }, true);
+  const dates = Array.from({ length: admDays }, (_, i) => wib(admDays - 1 - i)), m = {}; d.series.forEach(s => m[s.date] = s);
+  const rev = dates.map(x => m[x] ? m[x].revenue : 0), sold = dates.map(x => m[x] ? m[x].sold : 0), lb = dates.map(x => x.slice(8) + '/' + x.slice(5, 7));
+  const h = d.history, last = Math.max(Math.ceil(h.total / h.pageSize), 1);
+  view(`<div class="row"><h2 style="margin:0">Ringkasan</h2><select class="in" style="width:auto" aria-label="Rentang" onchange="set('admDays',+this.value);set('admPage',1);route()">${[[1, 'Hari ini'], [7, '7 hari'], [14, '14 hari'], [30, '30 hari']].map(r => `<option value="${r[0]}" ${admDays === r[0] ? 'selected' : ''}>${r[1]}</option>`).join('')}</select></div>
+  <div class="stats" style="margin-top:10px">${[['Pemasukan', rp(d.total_revenue)], ['Total order', d.total_orders], ['Produk terjual', d.products_sold], ['Pelanggan', d.customers]].map(s => `<div class="card stat"><span>${s[0]}</span><b>${s[1]}</b></div>`).join('')}</div>
+  ${admDays > 1 ? `<div class="card"><b>Pemasukan</b><div class="mut">dalam rupiah, per hari</div>${chart(rev, lb)}</div><div class="card"><b>Produk terjual</b><div class="mut">jumlah item, per hari</div>${chart(sold, lb)}</div>` : '<div class="card mut">Pilih 7 hari atau lebih untuk melihat grafik.</div>'}
+  ${d.top_products.length ? `<div class="card"><b>Produk terlaris</b>${d.top_products.map(p => `<div class="row mut"><span>${esc(p.name)}</span><span>${p.qty} terjual</span></div>`).join('')}</div>` : ''}
+  <h2>Riwayat order</h2><div class="card" style="overflow-x:auto">${h.items.length ? `<table>${h.items.map(o => { const x = o.status === 'CANCELLED', p = o.payment_status === 'PAID'; return `<tr><td><b>${esc(o.order_id)}</b></td><td>${esc(o.customer_name)}</td><td>${rp(o.total)}</td><td><span class="tag ${x ? 't-d' : p ? 't-ok' : 't-w'}">${x ? 'Batal' : p ? 'Lunas' : 'Belum bayar'}</span></td></tr>`; }).join('')}</table>` : '<p class="empty">Belum ada order pada rentang ini.</p>'}</div>
+  ${h.total > h.pageSize ? `<div class="row"><button class="btn o" ${admPage <= 1 ? 'disabled' : ''} onclick="set('admPage',admPage-1);route()">Sebelumnya</button><span class="mut">Halaman ${admPage} dari ${last}</span><button class="btn o" ${admPage >= last ? 'disabled' : ''} onclick="set('admPage',admPage+1);route()">Berikutnya</button></div>` : ''}`);
+}
+
+route();
+</script>
+</body>
+</html>
